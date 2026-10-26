@@ -91,6 +91,9 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:1
 .winnaar b::after{content:"  ★";color:var(--geel)}
 .uitslagen{display:flex;flex-direction:column;gap:14px}
 .bouwkop{margin:8px 0 0;font-size:22px;color:var(--ink)}
+.qrplek{display:flex;justify-content:center;padding-block:6px}
+.qr{width:320px;max-width:100%;height:auto;image-rendering:pixelated;border-radius:10px;border:1px solid var(--lijn)}
+.koppelblok{margin-top:16px}
 .stemmers{font-size:14px;color:var(--muted);max-height:220px;overflow:auto;line-height:1.6;font-variant-numeric:tabular-nums}
 .pin{display:flex;gap:12px;justify-content:center}
 .pin input{width:240px;text-align:center;letter-spacing:.4em}
@@ -119,6 +122,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:1
   </footer>
 </div>
 
+<script src="qrcode.js"></script>
 <script>
 'use strict';
 /* ---------- instellingen per iPad (localStorage) ---------- */
@@ -425,8 +429,10 @@ function tabInstellingen(){
       <label for="pinnieuw">Pincode leerkracht</label><input id="pinnieuw" inputmode="numeric" value="${h(String(inst.pin))}">
     </div></div>
     <div id="imelding"></div>
-    <div class="rij"><button class="knop klein" type="button" id="ibewaar">Opslaan en verbinding testen</button>${wachtrij.length?`<button class="knop klein licht" type="button" id="wverstuur">${wachtrij.length} wachtende stem(men) versturen</button>`:''}</div>`;
+    <div class="rij"><button class="knop klein" type="button" id="ibewaar">Opslaan en verbinding testen</button>${ingesteld()?'<button class="knop klein licht" type="button" id="koppel">Andere iPad koppelen</button>':''}${wachtrij.length?`<button class="knop klein licht" type="button" id="wverstuur">${wachtrij.length} wachtende stem(men) versturen</button>`:''}</div>
+    <div id="qrvak"></div>`;
   document.getElementById('bouw').value=inst.bouw;
+  const kb=document.getElementById('koppel');if(kb)kb.onclick=toonKoppelQR;
   document.getElementById('ibewaar').onclick=async()=>{
     ['owner','repo','branch','token','map'].forEach(k=>inst[k]=document.getElementById(k).value.trim());
     inst.branch=inst.branch||'main';inst.map=inst.map||'stemmen';
@@ -447,6 +453,49 @@ function tabInstellingen(){
   const w=document.getElementById('wverstuur');if(w)w.onclick=async()=>{await verwerkWachtrij();tabInstellingen()};
 }
 
+/* ---------- andere iPad koppelen via QR-code ---------- */
+// De instellingen gaan in het #-deel van de link. Dat deel stuurt de browser nooit naar een server.
+function koppelLink(bouw){
+  const d={o:inst.owner,r:inst.repo,b:inst.branch,t:inst.token,m:inst.map,p:String(inst.pin),w:bouw};
+  return location.origin+location.pathname+'#koppel='+b64(JSON.stringify(d)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function tekenQR(tekst){
+  const qr=qrcode(0,'M');qr.addData(tekst);qr.make();
+  const n=qr.getModuleCount(),rand=4,schaal=Math.max(4,Math.floor(320/(n+rand*2)));
+  const c=document.createElement('canvas');c.width=c.height=(n+rand*2)*schaal;
+  const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.fillStyle='#1e2a12';
+  for(let r=0;r<n;r++)for(let k=0;k<n;k++)if(qr.isDark(r,k))x.fillRect((k+rand)*schaal,(r+rand)*schaal,schaal,schaal);
+  c.className='qr';return c;
+}
+function toonKoppelQR(){
+  const vak=document.getElementById('qrvak');
+  vak.innerHTML=`<div class="blok koppelblok">
+    <h3>Andere iPad koppelen</h3>
+    <div class="form"><label for="qrbouw">Wie stemt op die iPad?</label><select id="qrbouw"><option value="beide">Iedereen (kind kiest 5/6 of 7/8)</option>${Object.entries(config.bouwen).map(([k,b])=>`<option value="${k}">Alleen ${h(b.label)}</option>`).join('')}</select></div>
+    <div class="qrplek" id="qrplek"></div>
+    <p class="uitleg">Open op de andere iPad de <b>Camera</b>, richt op de code en tik op de gele link. Die iPad is dan meteen klaar om te stemmen.<br>In deze code zit het token. Laat hem niet in beeld staan voor kinderen en maak er geen foto van om te bewaren.</p>
+    <div class="rij"><button class="knop klein licht" type="button" id="qrsluit">Code verbergen</button></div>
+  </div>`;
+  const sel=document.getElementById('qrbouw');sel.value=inst.bouw;
+  const teken=()=>{const p=document.getElementById('qrplek');p.innerHTML='';p.appendChild(tekenQR(koppelLink(sel.value)))};
+  sel.onchange=teken;teken();
+  document.getElementById('qrsluit').onclick=()=>{vak.innerHTML=''};
+  vak.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function leesKoppelLink(){
+  const m=location.hash.match(/^#koppel=([A-Za-z0-9_-]+)$/);
+  if(!m)return false;
+  history.replaceState(null,'',location.pathname); // token direct uit de adresbalk halen
+  try{
+    let s=m[1].replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';
+    const d=JSON.parse(unb64(s));
+    if(!d.o||!d.r||!d.t)throw new Error('onvolledig');
+    inst={owner:d.o,repo:d.r,branch:d.b||'main',token:d.t,map:d.m||'stemmen',pin:d.p||'1234',bouw:d.w||'beide'};
+    bewaar('stem_inst',inst);
+    return 'ok';
+  }catch(e){return 'fout'}
+}
+
 /* ---------- meerdere iPads: lijst en uitslag automatisch verversen ---------- */
 setInterval(async()=>{
   const veranderd=await laadConfig();
@@ -458,8 +507,15 @@ setInterval(async()=>{
 },30000);
 
 /* ---------- opstarten ---------- */
+const koppeling=leesKoppelLink();
 zetStatus(true);
 start();
+if(koppeling==='ok'){
+  main.insertAdjacentHTML('afterbegin','<div class="melding ok koppelok">Deze iPad is gekoppeld en klaar om te stemmen.</div>');
+  setTimeout(()=>document.querySelector('.koppelok')?.remove(),6000);
+}else if(koppeling==='fout'){
+  main.insertAdjacentHTML('afterbegin','<div class="melding">Deze koppelcode werkt niet. Laat een nieuwe QR-code zien en scan opnieuw.</div>');
+}
 laadConfig().then(v=>{if(v&&!main.querySelector('.paneel,#pin')&&!(document.getElementById('naam')?.value))start()});
 verwerkWachtrij();
 </script>
