@@ -1,0 +1,11 @@
+{
+  "name": "Leerlingraad Stemmen",
+  "short_name": "Stemmen",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#f4f7e6",
+  "theme_color": "#6fa32e",
+  "icons": [{ "src": "icon.png", "sizes": "512x512", "type": "image/png" }]
+}

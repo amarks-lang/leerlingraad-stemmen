@@ -23,7 +23,7 @@ In de app-repo staat geen token en geen leerlingdata.
    - *Instellingen*: gebruikersnaam, repo `leerlingraad-stemmen-data`, token, eventueel nieuwe pincode, en kies of deze iPad voor iedereen, alleen 5/6 of alleen 7/8 is. Tik *Opslaan en verbinding testen*.
    - *Kandidaten*: één naam per regel, per groep (5, 6, 7, 8). *Opslaan voor alle iPads* (komt in `config.json`). Een lege groep wordt overgeslagen.
 5. **Overige iPads**: op de eerste iPad ⚙ → *Instellingen* → **Andere iPad koppelen**. Kies wie er op die iPad stemt, scan de QR-code met de Camera van de andere iPad en tik op de link. Klaar: instellingen en token staan erop, de kandidaten komen uit de repo. (Het token zit in de QR-code, dus verberg die daarna weer.) Pas je later kandidaten aan, dan nemen de andere iPads dat binnen 30 seconden over (als er niemand aan het stemmen is).
-6. Tip: *Deel → Zet op beginscherm*, dan opent de app schermvullend. Met *Begeleide toegang* (Instellingen → Toegankelijkheid) blijven kinderen in de app.
+6. **Volledig scherm**: tik rechtsonder op **⛶ Volledig scherm**. Verlaat een kind het per ongeluk, dan gaat de app bij de volgende tik vanzelf weer schermvullend. Met *Begeleide toegang* (Instellingen → Toegankelijkheid, daarna 3× op de zijknop) kunnen kinderen Safari niet uit.
 
 ## Tijdens het stemmen
 
