@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Stemmen">
+<title>Leerlingraad Stemmen</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap">
+<style>
+/* Opzet: één scherm tegelijk, groot en aanraakvriendelijk voor iPad; huisstijl De Linde */
+:root{
+  --roest:#9e3a16; --oranje:#d86313; --geel:#f3aa19; --groen:#6fa32e; --lime:#b3be11;
+  --paars:#2e2a6b; --ink:#1e2a12; --muted:#5f6b55; --vlak:#f4f7e6; --kaart:#ffffff; --lijn:#d6ddc6;
+  --font:'Ubuntu','Segoe UI',system-ui,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{font-family:var(--font);color:var(--ink);background:var(--vlak);overflow:hidden;user-select:none;-webkit-user-select:none}
+input,textarea,select{user-select:text;-webkit-user-select:text}
+.balk{position:fixed;left:0;right:0;top:0;height:8px;display:flex;z-index:5}
+.balk i{flex:1}
+.app{height:100%;display:flex;flex-direction:column;padding:calc(28px + env(safe-area-inset-top,0px)) 32px calc(20px + env(safe-area-inset-bottom,0px))}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px}
+header img{height:64px}
+header .tag{font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--paars);font-weight:500;text-align:right}
+main{flex:1;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;gap:28px;min-height:0;overflow:auto;padding-block:12px}
+.scherm{margin-block:auto;width:100%;max-width:880px;display:flex;flex-direction:column;align-items:center;gap:26px}
+h1{margin:0;font-size:44px;line-height:1.1;text-align:center;text-wrap:balance}
+h2{margin:0;font-size:30px;text-align:center}
+.sub{margin:0;font-size:21px;color:var(--muted);text-align:center;text-wrap:balance}
+.knop{font:inherit;font-weight:700;font-size:26px;border:0;border-radius:18px;padding:22px 40px;background:var(--groen);color:#fff;cursor:pointer;min-height:76px;transition:transform .08s}
+.knop:active{transform:scale(.97)}
+.knop:disabled{background:#b9c2ad;cursor:default}
+.knop.licht{background:var(--kaart);color:var(--ink);border:2px solid var(--lijn)}
+.knop.klein{font-size:17px;padding:12px 20px;min-height:0;border-radius:12px}
+.knop.rood{background:var(--roest)}
+.bouwen{display:grid;grid-template-columns:1fr 1fr;gap:24px;width:100%}
+.bouw{font:inherit;border:0;border-radius:24px;padding:46px 20px;color:#fff;font-size:42px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px}
+.bouw small{font-size:19px;font-weight:500;opacity:.9}
+.veld{width:100%;max-width:560px;display:flex;flex-direction:column;gap:10px}
+.veld label{font-size:20px;font-weight:700;color:var(--paars)}
+.groot{font:inherit;font-size:34px;font-weight:500;padding:18px 22px;border:3px solid var(--lijn);border-radius:16px;background:var(--kaart);width:100%;color:var(--ink)}
+.groot:focus{outline:none;border-color:var(--groen)}
+.chips{display:flex;gap:14px;flex-wrap:wrap}
+.chip{font:inherit;font-size:28px;font-weight:700;padding:16px 34px;border-radius:14px;border:3px solid var(--lijn);background:var(--kaart);color:var(--ink);cursor:pointer;min-width:120px}
+.chip[aria-pressed="true"]{border-color:var(--groen);background:var(--groen);color:#fff}
+.lijst{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;width:100%}
+.kand{font:inherit;display:grid;grid-template-columns:62px 74px 1fr;align-items:stretch;height:96px;border:3px solid var(--ink);border-radius:16px;background:var(--kaart);overflow:hidden;cursor:pointer;padding:0;text-align:left;color:var(--ink)}
+.kand .nr{display:grid;place-items:center;font-size:32px;font-weight:700}
+.kand .vak{display:grid;place-items:center;background:var(--c)}
+.kand .vak span{width:46px;height:46px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:30px;color:var(--ink);font-weight:700}
+.kand .nm{display:flex;align-items:center;padding:0 18px;font-size:32px;font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.kand[aria-pressed="true"]{box-shadow:0 0 0 6px var(--geel)}
+.kand[aria-pressed="true"] .vak span::after{content:"✓"}
+.stemgroep{width:100%;display:flex;flex-direction:column;gap:12px}
+.gkop{display:flex;align-items:center;gap:14px}
+.gstap{font-size:24px;font-weight:700;color:#fff;background:var(--paars);padding:6px 16px;border-radius:10px}
+.gstatus{font-size:19px;font-weight:500;color:var(--muted)}
+.gstatus.ok{color:#3f6a12}
+.melding{font-size:21px;font-weight:500;padding:16px 22px;border-radius:14px;background:#fbe9e0;color:var(--roest);text-align:center;max-width:640px}
+.melding.ok{background:#e8f1da;color:#3f6a12}
+.vinkje{width:150px;height:150px;border-radius:50%;background:var(--groen);display:grid;place-items:center;color:#fff;font-size:90px;font-weight:700;animation:pop .35s ease-out}
+@keyframes pop{from{transform:scale(.6);opacity:.3}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.vinkje{animation:none}.knop{transition:none}}
+.rij{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+footer{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--muted);min-height:36px}
+.stip{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--lime);margin-right:8px;vertical-align:middle}
+.stip.uit{background:var(--oranje)}
+.tandwiel{font:inherit;background:none;border:0;color:var(--muted);font-size:26px;cursor:pointer;padding:6px 10px;opacity:.55}
+
+/* Leerkrachtmenu */
+.paneel{margin-block:auto;width:100%;max-width:980px;align-self:stretch;margin-inline:auto;display:flex;flex-direction:column;gap:18px;user-select:text;-webkit-user-select:text}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab{font:inherit;font-size:17px;font-weight:700;padding:10px 18px;border-radius:10px;border:2px solid var(--lijn);background:var(--kaart);cursor:pointer;color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--paars);border-color:var(--paars);color:#fff}
+.blok{background:var(--kaart);border:1px solid var(--lijn);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.blok h3{margin:0;font-size:20px;color:var(--paars)}
+.form{display:grid;grid-template-columns:180px 1fr;gap:10px 14px;align-items:center}
+.form label{font-size:15px;font-weight:500;color:var(--muted)}
+.form input,.form select,.blok textarea{font:inherit;font-size:16px;padding:9px 11px;border:2px solid var(--lijn);border-radius:9px;width:100%;background:#fff;color:var(--ink)}
+.blok textarea{min-height:150px;resize:vertical}
+.uitleg{font-size:14px;color:var(--muted);margin:0;line-height:1.45}
+.twee{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.uitslag{display:flex;flex-direction:column;gap:10px}
+.uit-rij{display:grid;grid-template-columns:minmax(110px,180px) 1fr 54px;gap:12px;align-items:center;font-size:17px}
+.uit-rij b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar{height:26px;border-radius:7px;background:var(--vlak);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--c);border-radius:7px;min-width:3px}
+.uit-rij .n{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.winnaar b::after{content:"  ★";color:var(--geel)}
+.uitslagen{display:flex;flex-direction:column;gap:14px}
+.bouwkop{margin:8px 0 0;font-size:22px;color:var(--ink)}
+.stemmers{font-size:14px;color:var(--muted);max-height:220px;overflow:auto;line-height:1.6;font-variant-numeric:tabular-nums}
+.pin{display:flex;gap:12px;justify-content:center}
+.pin input{width:240px;text-align:center;letter-spacing:.4em}
+@media (max-width:760px){
+  .app{padding-inline:16px}
+  h1{font-size:32px}
+  .bouwen,.twee{grid-template-columns:1fr}
+  .form{grid-template-columns:1fr}
+  .lijst{grid-template-columns:1fr}
+  .kand{height:80px;grid-template-columns:50px 62px 1fr}
+  .kand .nm{font-size:26px}
+}
+</style>
+</head>
+<body>
+<div class="balk"><i style="background:var(--roest)"></i><i style="background:var(--oranje)"></i><i style="background:var(--geel)"></i><i style="background:var(--groen)"></i><i style="background:var(--lime)"></i></div>
+<div class="app">
+  <header>
+    <img src="logo.png" alt="De Linde">
+    <div class="tag" id="kop">Verkiezing leerlingraad</div>
+  </header>
+  <main id="main"></main>
+  <footer>
+    <span id="status"><span class="stip"></span>Klaar</span>
+    <button class="tandwiel" id="tandwiel" type="button" aria-label="Leerkrachtmenu">⚙</button>
+  </footer>
+</div>
+
+<script>
+'use strict';
+/* ---------- instellingen per iPad (localStorage) ---------- */
+const KLEUREN=['var(--groen)','var(--oranje)','var(--lime)','var(--roest)','var(--geel)','var(--paars)'];
+const STANDAARD_CONFIG={
+  titel:'Verkiezing leerlingraad',
+  bouwen:{
+    '56':{label:'Groep 5/6',groepen:['5','6'],kandidaten:{'5':[],'6':[]}},
+    '78':{label:'Groep 7/8',groepen:['7','8'],kandidaten:{'7':[],'8':[]}}
+  }
+};
+// kandidaten staan per groep: elk kind stemt op één kandidaat per groep van zijn bouw
+function normaliseer(c){
+  c=c&&c.bouwen?c:JSON.parse(JSON.stringify(STANDAARD_CONFIG));
+  Object.values(c.bouwen).forEach(b=>{
+    if(Array.isArray(b.kandidaten)||!b.kandidaten)b.kandidaten={};
+    b.groepen.forEach(g=>{if(!Array.isArray(b.kandidaten[g]))b.kandidaten[g]=[]});
+  });
+  return c;
+}
+// groepen van een bouw die echt kandidaten hebben
+function stemGroepen(b){return b.groepen.filter(g=>b.kandidaten[g].length)}
+function lees(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function bewaar(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+
+let inst=lees('stem_inst',{owner:'',repo:'',branch:'main',token:'',pin:'1234',bouw:'beide',map:'stemmen'});
+let config=normaliseer(lees('stem_config',null));
+let wachtrij=lees('stem_wachtrij',[]);
+let sessie={};          // huidige stemmer
+let resetTimer=null;
+
+/* ---------- GitHub API ---------- */
+const API='https://api.github.com';
+function gh(pad,opties={}){
+  return fetch(`${API}/repos/${encodeURIComponent(inst.owner)}/${encodeURIComponent(inst.repo)}/contents/${pad.split('/').map(encodeURIComponent).join('/')}${opties.method?'':'?ref='+encodeURIComponent(inst.branch)}`,{
+    method:opties.method||'GET',
+    headers:{'Authorization':'Bearer '+inst.token,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',...(opties.body?{'Content-Type':'application/json'}:{})},
+    body:opties.body?JSON.stringify(opties.body):undefined,
+    cache:'no-store'
+  });
+}
+function b64(str){const bytes=new TextEncoder().encode(str);let s='';bytes.forEach(b=>s+=String.fromCharCode(b));return btoa(s)}
+function unb64(s){const bin=atob(s.replace(/\n/g,''));return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)))}
+function ingesteld(){return inst.owner&&inst.repo&&inst.token}
+
+async function lijstMap(pad){
+  const r=await gh(pad);
+  if(r.status===404)return [];
+  if(!r.ok)throw new Error('GitHub gaf fout '+r.status);
+  const d=await r.json();
+  return Array.isArray(d)?d:[];
+}
+async function schrijfBestand(pad,inhoud,bericht){
+  let sha;
+  const bestaand=await gh(pad);
+  if(bestaand.ok){sha=(await bestaand.json()).sha}
+  const r=await gh(pad,{method:'PUT',body:{message:bericht,content:b64(inhoud),branch:inst.branch,...(sha?{sha}:{})}});
+  if(!r.ok)throw new Error('Opslaan mislukt ('+r.status+')');
+}
+async function laadConfig(){
+  if(!ingesteld())return;
+  try{
+    const r=await gh('config.json');
+    if(r.ok){const d=await r.json();const oud=JSON.stringify(config);config=normaliseer(JSON.parse(unb64(d.content)));bewaar('stem_config',config);zetStatus(true);return oud!==JSON.stringify(config)}
+  }catch(e){zetStatus(false)}
+  return false;
+}
+
+/* ---------- namen en bestandsnamen ---------- */
+function slug(s){return s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'x'}
+// stembestand: <map>/<bouw>/<tijd>__<groep stemmer>__<stemmer>__g5-<kandidaat>__g6-<kandidaat>.json
+function ontleed(naam){
+  const m=naam.replace(/\.json$/,'').split('__');
+  if(m.length<4)return null;
+  const keuzes={};
+  m.slice(3).forEach(x=>{const k=x.match(/^g([^-]+)-(.+)$/);if(k)keuzes[k[1]]=k[2]});
+  return {tijd:+m[0],groep:m[1],stemmer:m[2],keuzes};
+}
+
+/* ---------- wachtrij (als internet even weg is) ---------- */
+let bezig=false;
+async function verwerkWachtrij(){
+  if(bezig||!wachtrij.length||!ingesteld())return;
+  bezig=true;
+  try{
+    while(wachtrij.length){
+      const s=wachtrij[0];
+      await schrijfBestand(s.pad,JSON.stringify(s.data,null,2),`Stem ${s.data.bouw} (${s.data.groep})`);
+      wachtrij.shift();bewaar('stem_wachtrij',wachtrij);
+    }
+    zetStatus(true);
+  }catch(e){zetStatus(false)}
+  bezig=false;
+}
+setInterval(verwerkWachtrij,20000);
+window.addEventListener('online',verwerkWachtrij);
+
+function zetStatus(ok){
+  const el=document.getElementById('status');
+  const w=wachtrij.length?` · ${wachtrij.length} stem${wachtrij.length>1?'men':''} wacht${wachtrij.length>1?'en':''} op versturen`:'';
+  if(!ingesteld()){el.innerHTML='<span class="stip uit"></span>Nog niet ingesteld';return}
+  el.innerHTML=ok?`<span class="stip"></span>Verbonden met GitHub${w}`:`<span class="stip uit"></span>Geen verbinding${w}`;
+}
+
+/* ---------- schermen voor kinderen ---------- */
+const main=document.getElementById('main');
+function h(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function bouwen(){return inst.bouw==='beide'?Object.keys(config.bouwen):[inst.bouw]}
+
+function start(){
+  clearTimeout(resetTimer);
+  main.onclick=null;
+  sessie={};
+  document.getElementById('kop').textContent=config.titel||'Verkiezing leerlingraad';
+  if(!ingesteld()){
+    main.innerHTML=`<div class="scherm"><h1>Deze iPad is nog niet ingesteld</h1><p class="sub">Tik rechtsonder op het tandwiel en log in met de leerkracht-pincode.</p></div>`;
+    return;
+  }
+  const b=bouwen();
+  if(b.length===1){sessie.bouw=b[0];naamScherm();return}
+  main.innerHTML=`<div class="scherm"><h1>Welkom bij de verkiezing!</h1><p class="sub">In welke groep zit jij?</p>
+    <div class="bouwen">${b.map((k,i)=>`<button class="bouw" type="button" data-b="${k}" style="background:${i?'var(--oranje)':'var(--groen)'}">${h(config.bouwen[k].label)}<small>Tik hier</small></button>`).join('')}</div></div>`;
+  main.querySelectorAll('.bouw').forEach(x=>x.onclick=()=>{sessie.bouw=x.dataset.b;naamScherm()});
+}
+
+function naamScherm(fout){
+  const bw=config.bouwen[sessie.bouw];
+  main.innerHTML=`<div class="scherm">
+    <h1>Wat is je naam?</h1>
+    ${fout?`<div class="melding">${h(fout)}</div>`:''}
+    <div class="veld"><label for="naam">Je voornaam en achternaam</label>
+      <input class="groot" id="naam" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="next" value="${h(sessie.naam||'')}"></div>
+    <div class="veld"><label>Je groep</label><div class="chips">${bw.groepen.map(g=>`<button class="chip" type="button" data-g="${g}" aria-pressed="${sessie.groep===g}">Groep ${g}</button>`).join('')}</div></div>
+    <div class="rij">${bouwen().length>1?'<button class="knop licht" type="button" id="terug">Terug</button>':''}<button class="knop" type="button" id="verder">Verder</button></div>
+  </div>`;
+  const inp=document.getElementById('naam');
+  const verder=document.getElementById('verder');
+  const check=()=>{verder.disabled=!(inp.value.trim().length>=2&&sessie.groep)};
+  main.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{sessie.groep=c.dataset.g;main.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===c));check()});
+  inp.oninput=check;
+  inp.onkeydown=e=>{if(e.key==='Enter'){inp.blur()}};
+  check();
+  const t=document.getElementById('terug');if(t)t.onclick=start;
+  verder.onclick=async()=>{
+    sessie.naam=inp.value.trim().replace(/\s+/g,' ');
+    verder.disabled=true;verder.textContent='Even kijken…';
+    try{
+      const al=(await lijstMap(`${inst.map}/${sessie.bouw}`)).map(f=>ontleed(f.name)).filter(Boolean);
+      const wacht=wachtrij.filter(s=>s.data.bouw===sessie.bouw).map(s=>slug(s.data.naam));
+      if(al.some(s=>s.stemmer===slug(sessie.naam))||wacht.includes(slug(sessie.naam))){
+        naamScherm('Met deze naam is al gestemd. Vraag het even aan de juf of meester.');return;
+      }
+      zetStatus(true);
+    }catch(e){zetStatus(false) /* geen internet: toch laten stemmen, controle gebeurt bij de uitslag */}
+    stemScherm();
+  };
+  setTimeout(()=>inp.focus(),50);
+}
+
+function stemScherm(){
+  const bw=config.bouwen[sessie.bouw];
+  const groepen=stemGroepen(bw);
+  if(!groepen.length){
+    main.innerHTML=`<div class="scherm"><h1>Er zijn nog geen kandidaten</h1><p class="sub">De juf of meester moet de kandidaten nog invullen.</p><button class="knop licht" type="button" id="terug">Terug</button></div>`;
+    document.getElementById('terug').onclick=start;return;
+  }
+  sessie.keuze={};
+  const twee=groepen.length>1;
+  main.innerHTML=`<div class="scherm">
+    <h1>Op wie stem jij, ${h(sessie.naam.split(' ')[0])}?</h1>
+    <p class="sub">${twee?`Je mag <b>${groepen.length} stemmen</b> uitbrengen: kies één naam uit ${groepen.map(g=>'groep '+g).join(' en één uit ')}.`:'Tik op één naam.'} Daarna tik je op <b>Stem!</b></p>
+    ${groepen.map(g=>`<div class="stemgroep" data-g="${g}">
+      ${twee?`<div class="gkop"><span class="gstap">Groep ${g}</span><span class="gstatus" id="st${g}">Kies één naam</span></div>`:''}
+      <div class="lijst">${bw.kandidaten[g].map((k,i)=>`<button class="kand" type="button" data-g="${g}" data-k="${i}" aria-pressed="false"><span class="nr">${i+1}</span><span class="vak" style="--c:${KLEUREN[i%KLEUREN.length]}"><span></span></span><span class="nm">${h(k)}</span></button>`).join('')}</div>
+    </div>`).join('')}
+    <div class="rij"><button class="knop licht" type="button" id="terug">Terug</button><button class="knop" type="button" id="stem" disabled>Stem!</button></div>
+  </div>`;
+  const stem=document.getElementById('stem');
+  main.querySelectorAll('.kand').forEach(k=>k.onclick=()=>{
+    const g=k.dataset.g;
+    sessie.keuze[g]=+k.dataset.k;
+    main.querySelectorAll(`.kand[data-g="${g}"]`).forEach(x=>x.setAttribute('aria-pressed',x===k));
+    const st=document.getElementById('st'+g);if(st){st.textContent='✓ Gekozen';st.classList.add('ok')}
+    stem.disabled=!groepen.every(x=>x in sessie.keuze);
+  });
+  document.getElementById('terug').onclick=()=>naamScherm();
+  stem.onclick=()=>verstuur(stem);
+}
+
+async function verstuur(knop){
+  knop.disabled=true;knop.textContent='Bezig…';
+  const bw=config.bouwen[sessie.bouw];
+  const stemmen={};
+  Object.entries(sessie.keuze).forEach(([g,i])=>stemmen[g]=bw.kandidaten[g][i]);
+  const tijd=Date.now();
+  const deel=Object.entries(stemmen).map(([g,k])=>`g${g}-${slug(k)}`).join('__');
+  const pad=`${inst.map}/${sessie.bouw}/${tijd}__${sessie.groep}__${slug(sessie.naam)}__${deel}.json`;
+  const data={naam:sessie.naam,groep:sessie.groep,bouw:sessie.bouw,stemmen,tijd:new Date(tijd).toISOString()};
+  wachtrij.push({pad,data});bewaar('stem_wachtrij',wachtrij);
+  await verwerkWachtrij();
+  klaar(!wachtrij.length);
+}
+
+function klaar(verstuurd){
+  main.innerHTML=`<div class="scherm"><div class="vinkje">✓</div><h1>Bedankt voor je stem!</h1>
+    <p class="sub">${verstuurd?'Je stem is opgeslagen.':'Je stem is bewaard op deze iPad en wordt verstuurd zodra er internet is.'}</p>
+    <p class="sub">Geef de iPad aan de volgende.</p></div>`;
+  resetTimer=setTimeout(start,5000);
+  main.onclick=()=>{main.onclick=null;start()};
+}
+
+/* ---------- leerkrachtmenu ---------- */
+document.getElementById('tandwiel').onclick=pinScherm;
+function pinScherm(){
+  clearTimeout(resetTimer);main.onclick=null;
+  main.innerHTML=`<div class="scherm"><h2>Leerkrachtmenu</h2><p class="sub">Vul de pincode in.</p>
+    <div class="pin"><input class="groot" id="pin" type="password" inputmode="numeric" autocomplete="off"></div>
+    <div id="pinfout"></div>
+    <div class="rij"><button class="knop licht" type="button" id="annuleer">Annuleren</button><button class="knop" type="button" id="open">Openen</button></div></div>`;
+  const p=document.getElementById('pin');
+  const probeer=()=>{if(p.value===String(inst.pin)){paneel('uitslag')}else{document.getElementById('pinfout').innerHTML='<div class="melding">Die pincode klopt niet.</div>';p.value='';p.focus()}};
+  document.getElementById('open').onclick=probeer;
+  p.onkeydown=e=>{if(e.key==='Enter')probeer()};
+  document.getElementById('annuleer').onclick=start;
+  setTimeout(()=>p.focus(),50);
+}
+
+function paneel(tab){
+  main.innerHTML=`<div class="paneel">
+    <div class="tabs" role="tablist">
+      ${[['uitslag','Uitslag'],['kandidaten','Kandidaten'],['instellingen','Instellingen']].map(([k,l])=>`<button class="tab" role="tab" type="button" data-t="${k}" aria-selected="${tab===k}">${l}</button>`).join('')}
+      <span style="flex:1"></span><button class="knop klein" type="button" id="sluit">Terug naar stemmen</button>
+    </div>
+    <div id="tabinhoud"></div></div>`;
+  main.querySelectorAll('.tab').forEach(t=>t.onclick=()=>paneel(t.dataset.t));
+  document.getElementById('sluit').onclick=start;
+  ({uitslag:tabUitslag,kandidaten:tabKandidaten,instellingen:tabInstellingen})[tab]();
+}
+
+async function tabUitslag(){
+  const el=document.getElementById('tabinhoud');
+  if(!ingesteld()){el.innerHTML='<div class="blok"><p class="uitleg">Stel eerst de GitHub-gegevens in bij Instellingen.</p></div>';return}
+  el.innerHTML='<div class="blok"><p class="uitleg">Uitslag ophalen…</p></div>';
+  try{
+    const delen=await Promise.all(Object.keys(config.bouwen).map(async k=>{
+      const stemmen=(await lijstMap(`${inst.map}/${k}`)).map(f=>ontleed(f.name)).filter(Boolean).sort((a,b)=>a.tijd-b.tijd);
+      // dubbele stemmers: alleen de eerste stem telt
+      const gezien=new Set(),geldig=[],dubbel=[];
+      stemmen.forEach(s=>{if(gezien.has(s.stemmer))dubbel.push(s);else{gezien.add(s.stemmer);geldig.push(s)}});
+      const bw=config.bouwen[k];
+      const groepBlokken=bw.groepen.map(g=>{
+        const lijst=bw.kandidaten[g];
+        const stemmenG=geldig.filter(s=>s.keuzes[g]);
+        const tel=lijst.map((n,i)=>({naam:n,i,n:stemmenG.filter(s=>s.keuzes[g]===slug(n)).length}));
+        const onbekend=stemmenG.filter(s=>!lijst.some(n=>slug(n)===s.keuzes[g])).length;
+        const max=Math.max(1,...tel.map(t=>t.n));
+        const top=Math.max(0,...tel.map(t=>t.n));
+        return `<div class="blok"><h3>Kandidaten groep ${h(g)} · ${stemmenG.length} stem${stemmenG.length===1?'':'men'}</h3>
+          <div class="uitslag">${tel.length?tel.map(t=>`<div class="uit-rij ${top&&t.n===top?'winnaar':''}"><b>${h(t.naam)}</b><div class="bar"><i style="width:${t.n/max*100}%;--c:${KLEUREN[t.i%KLEUREN.length]}"></i></div><span class="n">${t.n}</span></div>`).join(''):'<p class="uitleg">Geen kandidaten ingesteld.</p>'}</div>
+          ${onbekend?`<p class="uitleg">${onbekend} stem(men) op een naam die niet (meer) in de lijst staat.</p>`:''}
+        </div>`;
+      }).join('');
+      return `<h3 class="bouwkop">${h(bw.label)} · ${geldig.length} kind${geldig.length===1?'':'eren'} gestemd</h3>
+        <div class="twee">${groepBlokken}</div>
+        ${dubbel.length?`<p class="uitleg">${dubbel.length} dubbele stem(men) niet meegeteld: ${dubbel.map(d=>h(d.stemmer.replace(/-/g,' '))).join(', ')}.</p>`:''}
+        <details class="blok"><summary class="uitleg">Wie heeft er gestemd in ${h(bw.label)}? (${geldig.length})</summary><div class="stemmers">${geldig.map(s=>`${h(s.stemmer.replace(/-/g,' '))} (gr. ${h(s.groep)})`).join('<br>')||'Nog niemand'}</div></details>`;
+    }));
+    el.innerHTML=`<div class="uitslagen">${delen.join('')}</div><div class="rij" style="margin-top:16px"><button class="knop klein licht" type="button" id="ververs">Vernieuwen</button></div>`;
+    document.getElementById('ververs').onclick=tabUitslag;
+    zetStatus(true);
+  }catch(e){el.innerHTML=`<div class="blok"><div class="melding">Kon de uitslag niet ophalen: ${h(e.message)}. Controleer de instellingen en het internet.</div></div>`;zetStatus(false)}
+}
+
+function tabKandidaten(){
+  const el=document.getElementById('tabinhoud');
+  el.innerHTML=`<div class="blok"><label for="titel" class="uitleg">Titel bovenaan</label><input id="titel" value="${h(config.titel||'')}" style="font:inherit;font-size:16px;padding:9px 11px;border:2px solid var(--lijn);border-radius:9px"></div>
+  <p class="uitleg" style="margin-top:14px">Eén naam per regel, in de volgorde van het stembiljet. Elk kind stemt op één kandidaat per groep van zijn bouw (dus 5/6 brengt twee stemmen uit: één voor groep 5, één voor groep 6). Laat een groep leeg om hem over te slaan.</p>
+  <div class="twee" style="margin-top:10px">${Object.values(config.bouwen).flatMap(b=>b.groepen.map(g=>`<div class="blok"><h3>Kandidaten groep ${h(g)}</h3><textarea id="k${g}">${h(b.kandidaten[g].join('\n'))}</textarea></div>`)).join('')}</div>
+  <div id="kmelding"></div>
+  <div class="rij"><button class="knop klein" type="button" id="kbewaar">Opslaan voor alle iPads</button></div>`;
+  document.getElementById('kbewaar').onclick=async()=>{
+    config.titel=document.getElementById('titel').value.trim()||'Verkiezing leerlingraad';
+    Object.values(config.bouwen).forEach(b=>b.groepen.forEach(g=>b.kandidaten[g]=document.getElementById('k'+g).value.split('\n').map(s=>s.trim()).filter(Boolean)));
+    bewaar('stem_config',config);
+    const m=document.getElementById('kmelding');
+    try{await schrijfBestand('config.json',JSON.stringify(config,null,2),'Kandidaten bijgewerkt');m.innerHTML='<div class="melding ok">Opgeslagen in GitHub. Andere iPads halen dit op bij het opnieuw laden.</div>'}
+    catch(e){m.innerHTML=`<div class="melding">Alleen op deze iPad opgeslagen, GitHub lukte niet: ${h(e.message)}</div>`}
+  };
+}
+
+function tabInstellingen(){
+  const el=document.getElementById('tabinhoud');
+  el.innerHTML=`<div class="blok"><h3>GitHub-opslag</h3>
+    <p class="uitleg">De stemmen komen als losse bestandjes in deze repo. Gebruik een privé-repo en een fine-grained token met alleen <b>Contents: Read and write</b> op die ene repo.</p>
+    <div class="form">
+      <label for="owner">Eigenaar (gebruikersnaam)</label><input id="owner" value="${h(inst.owner)}" autocapitalize="off" autocorrect="off">
+      <label for="repo">Repo</label><input id="repo" value="${h(inst.repo)}" autocapitalize="off" autocorrect="off">
+      <label for="branch">Branch</label><input id="branch" value="${h(inst.branch)}" autocapitalize="off">
+      <label for="token">Token</label><input id="token" type="password" value="${h(inst.token)}" autocomplete="off">
+      <label for="map">Map voor stemmen</label><input id="map" value="${h(inst.map)}" autocapitalize="off">
+    </div></div>
+    <div class="blok"><h3>Deze iPad</h3><div class="form">
+      <label for="bouw">Wie stemt hier?</label><select id="bouw"><option value="beide">Iedereen (kind kiest 5/6 of 7/8)</option>${Object.entries(config.bouwen).map(([k,b])=>`<option value="${k}">Alleen ${h(b.label)}</option>`).join('')}</select>
+      <label for="pinnieuw">Pincode leerkracht</label><input id="pinnieuw" inputmode="numeric" value="${h(String(inst.pin))}">
+    </div></div>
+    <div id="imelding"></div>
+    <div class="rij"><button class="knop klein" type="button" id="ibewaar">Opslaan en verbinding testen</button>${wachtrij.length?`<button class="knop klein licht" type="button" id="wverstuur">${wachtrij.length} wachtende stem(men) versturen</button>`:''}</div>`;
+  document.getElementById('bouw').value=inst.bouw;
+  document.getElementById('ibewaar').onclick=async()=>{
+    ['owner','repo','branch','token','map'].forEach(k=>inst[k]=document.getElementById(k).value.trim());
+    inst.branch=inst.branch||'main';inst.map=inst.map||'stemmen';
+    inst.bouw=document.getElementById('bouw').value;
+    inst.pin=document.getElementById('pinnieuw').value.trim()||'1234';
+    bewaar('stem_inst',inst);
+    const m=document.getElementById('imelding');
+    try{
+      const r=await fetch(`${API}/repos/${encodeURIComponent(inst.owner)}/${encodeURIComponent(inst.repo)}`,{headers:{'Authorization':'Bearer '+inst.token,'Accept':'application/vnd.github+json'},cache:'no-store'});
+      if(!r.ok)throw new Error(r.status===404?'repo niet gevonden of token heeft geen toegang':r.status===401?'token ongeldig':'fout '+r.status);
+      const d=await r.json();
+      if(d.permissions&&!d.permissions.push)throw new Error('token mag niet schrijven in deze repo');
+      await laadConfig();
+      m.innerHTML=`<div class="melding ok">Verbonden met ${h(inst.owner)}/${h(inst.repo)}${d.private?' (privé)':' — let op: deze repo is openbaar, de namen van kinderen zijn dan voor iedereen zichtbaar'}.</div>`;
+      zetStatus(true);
+    }catch(e){m.innerHTML=`<div class="melding">Verbinden lukt niet: ${h(e.message)}.</div>`;zetStatus(false)}
+  };
+  const w=document.getElementById('wverstuur');if(w)w.onclick=async()=>{await verwerkWachtrij();tabInstellingen()};
+}
+
+/* ---------- meerdere iPads: lijst en uitslag automatisch verversen ---------- */
+setInterval(async()=>{
+  const veranderd=await laadConfig();
+  // alleen opnieuw tekenen als er niemand bezig is
+  const rustig=!main.querySelector('.paneel,.vinkje,.kand,#pin')&&!(document.getElementById('naam')?.value);
+  if(veranderd&&rustig)start();
+  const tab=main.querySelector('.tab[aria-selected="true"]');
+  if(tab&&tab.dataset.t==='uitslag'&&!main.querySelector('details[open]'))tabUitslag();
+},30000);
+
+/* ---------- opstarten ---------- */
+zetStatus(true);
+start();
+laadConfig().then(v=>{if(v&&!main.querySelector('.paneel,#pin')&&!(document.getElementById('naam')?.value))start()});
+verwerkWachtrij();
+</script>
+</body>
+</html>
