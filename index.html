@@ -104,6 +104,8 @@ h2{margin:0;font-size:30px;text-align:center}
 footer{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--muted);min-height:36px}
 .stip{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--lime);margin-right:8px;vertical-align:middle}
 .stip.uit{background:var(--oranje)}
+.links{display:flex;align-items:center;gap:14px}
+.versie{font-size:12px;opacity:.6}
 .rechts{display:flex;align-items:center;gap:6px}
 .vol{font:inherit;font-size:15px;font-weight:500;background:none;border:1px solid var(--lijn);border-radius:9px;color:var(--muted);padding:7px 12px;cursor:pointer}
 .tandwiel{font:inherit;background:none;border:0;color:var(--muted);font-size:26px;cursor:pointer;padding:6px 10px;opacity:.55}
@@ -156,7 +158,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:1
   </header>
   <main id="main"></main>
   <footer>
-    <span id="status"><span class="stip"></span>Klaar</span>
+    <span class="links"><span id="status"><span class="stip"></span>Klaar</span><span class="versie">versie 27-10</span></span>
     <span class="rechts"><button class="vol" id="vol" type="button" hidden>⛶ Volledig scherm</button><button class="tandwiel" id="tandwiel" type="button" aria-label="Leerkrachtmenu">⚙</button></span>
   </footer>
 </div>
