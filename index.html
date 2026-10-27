@@ -135,6 +135,8 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:1
 .qrplek{display:flex;justify-content:center;padding-block:6px}
 .qr{width:320px;max-width:100%;height:auto;image-rendering:pixelated;border-radius:10px;border:1px solid var(--lijn)}
 .koppelblok{margin-top:16px}
+#resetvak{margin-top:14px}
+.resetblok{border:2px solid var(--roest)}
 .stemmers{font-size:14px;color:var(--muted);max-height:220px;overflow:auto;line-height:1.6;font-variant-numeric:tabular-nums}
 .pin{display:flex;gap:12px;justify-content:center}
 .pin input{width:240px;text-align:center;letter-spacing:.4em}
@@ -158,7 +160,7 @@ footer{display:flex;justify-content:space-between;align-items:center;font-size:1
   </header>
   <main id="main"></main>
   <footer>
-    <span class="links"><span id="status"><span class="stip"></span>Klaar</span><span class="versie">versie 27-10</span></span>
+    <span class="links"><span id="status"><span class="stip"></span>Klaar</span><span class="versie">versie 27-10b</span></span>
     <span class="rechts"><button class="vol" id="vol" type="button" hidden>⛶ Volledig scherm</button><button class="tandwiel" id="tandwiel" type="button" aria-label="Leerkrachtmenu">⚙</button></span>
   </footer>
 </div>
@@ -481,8 +483,9 @@ async function tabUitslag(){
         <details class="blok"><summary class="uitleg">Wie heeft er gestemd in ${h(bw.label)}? (${geldig.length})</summary><div class="stemmers">${geldig.map(s=>`${h(naamVan(bw,s.stemmer))} (gr. ${h(s.groep)})`).join('<br>')||'Nog niemand'}</div></details>
         ${(()=>{const nog=bw.groepen.flatMap(g=>bw.leerlingen[g].filter(l=>!gezien.has(l.id)).map(l=>`${h(l.naam)} (gr. ${g})`));const tot=bw.groepen.reduce((a,g)=>a+bw.leerlingen[g].length,0);return tot?`<details class="blok"><summary class="uitleg">Nog niet gestemd in ${h(bw.label)}: ${nog.length} van ${tot}</summary><div class="stemmers">${nog.join('<br>')||'Iedereen heeft gestemd!'}</div></details>`:''})()}`;
     }));
-    el.innerHTML=`<div class="uitslagen">${delen.join('')}</div><div class="rij" style="margin-top:16px"><button class="knop klein licht" type="button" id="ververs">Vernieuwen</button></div>`;
+    el.innerHTML=`<div class="uitslagen">${delen.join('')}</div><div class="rij" style="margin-top:16px"><button class="knop klein licht" type="button" id="ververs">Vernieuwen</button><button class="knop klein rood" type="button" id="reset">Stemming resetten</button></div><div id="resetvak"></div>`;
     document.getElementById('ververs').onclick=tabUitslag;
+    document.getElementById('reset').onclick=resetVraag;
     zetStatus(true);
   }catch(e){el.innerHTML=`<div class="blok"><div class="melding">Kon de uitslag niet ophalen: ${h(e.message)}. Controleer de instellingen en het internet.</div></div>`;zetStatus(false)}
 }
@@ -610,6 +613,35 @@ function tabInstellingen(){
     }catch(e){m.innerHTML=`<div class="melding">Verbinden lukt niet: ${h(e.message)}.</div>`;zetStatus(false)}
   };
   const w=document.getElementById('wverstuur');if(w)w.onclick=async()=>{await verwerkWachtrij();tabInstellingen()};
+}
+
+/* ---------- stemming resetten (bijv. na een test) ---------- */
+async function resetVraag(){
+  const vak=document.getElementById('resetvak');
+  vak.innerHTML='<div class="blok"><p class="uitleg">Stemmen tellen…</p></div>';
+  let bestanden=[];
+  try{for(const k of Object.keys(config.bouwen))bestanden.push(...(await lijstMap(`${inst.map}/${k}`)).filter(f=>f.name.endsWith('.json')).map(f=>({pad:`${inst.map}/${k}/${f.name}`,sha:f.sha})))}
+  catch(e){vak.innerHTML=`<div class="melding">Kon de stemmen niet ophalen: ${h(e.message)}</div>`;return}
+  if(!bestanden.length&&!wachtrij.length){vak.innerHTML='<div class="melding ok">Er zijn geen stemmen om te wissen.</div>';return}
+  vak.innerHTML=`<div class="blok resetblok"><h3>Weet je het zeker?</h3>
+    <p class="uitleg">Dit wist <b>alle ${bestanden.length} stemmen</b> van alle groepen. Leerlingen, pincodes en kandidaten blijven staan, en iedereen kan daarna opnieuw stemmen. Dit kun je niet ongedaan maken.</p>
+    <div class="rij"><button class="knop klein licht" type="button" id="rnee">Annuleren</button><button class="knop klein rood" type="button" id="rja">Ja, wis alle stemmen</button></div></div>`;
+  vak.scrollIntoView({behavior:'smooth',block:'nearest'});
+  document.getElementById('rnee').onclick=()=>{vak.innerHTML=''};
+  document.getElementById('rja').onclick=async()=>{
+    wachtrij=[];bewaar('stem_wachtrij',wachtrij);   // testmeningen die nog op deze iPad wachten
+    let klaar=0,mis=0;
+    const voortgang=()=>{vak.innerHTML=`<div class="blok"><p class="uitleg">Wissen… ${klaar} van ${bestanden.length}</p></div>`};
+    voortgang();
+    for(const b of bestanden){
+      try{const r=await gh(b.pad,{method:'DELETE',body:{message:'Stemming gereset',sha:b.sha,branch:inst.branch}});if(r.ok||r.status===404)klaar++;else mis++}
+      catch(e){mis++}
+      voortgang();
+    }
+    zetStatus(true);
+    await tabUitslag();
+    document.getElementById('resetvak').innerHTML=mis?`<div class="melding">${klaar} stemmen gewist, ${mis} lukten niet. Tik nog een keer op Stemming resetten.</div>`:`<div class="melding ok">Alle ${klaar} stemmen zijn gewist. Je kunt opnieuw beginnen.</div>`;
+  };
 }
 
 /* ---------- andere iPad koppelen via QR-code ---------- */

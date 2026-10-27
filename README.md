@@ -41,7 +41,9 @@ In de app-repo staat geen token en geen leerlingdata.
 
 ⚙ → pincode → *Uitslag*. Per groep de stemmen per kandidaat (ververst elke 30 seconden), de winnaar met een ★, wie er gestemd heeft en wie **nog niet**. Dubbele stemmen (bijvoorbeeld van een offline iPad) tellen maar één keer: de eerste telt.
 
-Een stem verwijderen? Verwijder het bestand in `stemmen/56/` of `stemmen/78/` in de data-repo.
+**Na een test opnieuw beginnen**: ⚙ → *Uitslag* → **Stemming resetten**. Na een bevestiging worden alle stemmen gewist; leerlingen, pincodes en kandidaten blijven staan.
+
+Eén losse stem verwijderen? Verwijder het bestand in `stemmen/56/` of `stemmen/78/` in de data-repo.
 
 Bestandsnaam van een stem: `<tijd>__<groep>__<leerling-id>__g5-<kandidaat>__g6-<kandidaat>.json`.
 
